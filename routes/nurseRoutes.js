@@ -2,6 +2,7 @@ import express from "express";
 import multer from "multer";
 import bcrypt from "bcryptjs";
 import PendingStaff from "../models/PendingStaff.js";
+import Nurse from "../models/Nurse.js";  // ✅ Make sure the path is correct
 
 const router = express.Router();
 

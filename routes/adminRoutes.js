@@ -7,25 +7,6 @@ import Doctor from "../models/Doctor.js";
 import nodemailer from "nodemailer";
 import PendingStaff from "../models/PendingStaff.js";
 const router = express.Router();
-/*import {
-  getPendingStaff,
-  approveStaff,
-  rejectStaff,
-  getAcceptedStaff,
-  getRejectedStaff,
-  getAllNurses,
-  getAllDoctors
-} from "../controllers/adminController.js";
-
-
-
-router.get("/pending-staff", getPendingStaff);
-router.post("/approve/:id", approveStaff);
-router.post("/reject/:id", rejectStaff);
-router.get("/accepted-staff", getAcceptedStaff);
-router.get("/rejected-staff", getRejectedStaff);
-router.get("/nurses", getAllNurses);
-router.get("/doctors", getAllDoctors);*/
 
 // ✅ Register Admin
 router.post("/register", async (req, res) => {
