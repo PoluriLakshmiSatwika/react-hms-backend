@@ -33,12 +33,20 @@ router.post("/register", async (req, res) => {
     });
 
     await newAdmin.save();
-    res.status(201).json({ message: "Admin registered successfully" });
+    return res.status(201).json({ message: "Admin registered successfully" });
+
   } catch (error) {
     console.error("Error registering admin:", error);
-    res.status(500).json({ message: "Server error" });
+
+    // ✅ Handle duplicate key error properly
+    if (error.code === 11000) {
+      return res.status(400).json({ message: "Email already exists" });
+    }
+
+    return res.status(500).json({ message: "Server error. Please try again later." });
   }
 });
+
 // ✅ Admin login
 router.post("/login", async (req, res) => {
   try {
