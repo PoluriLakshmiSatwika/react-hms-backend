@@ -12,6 +12,8 @@ import doctorRoutes from "./routes/doctorRoutes.js";
 dotenv.config({ path: './.env' });
 import path from "path";
 import { fileURLToPath } from "url";
+import passwordRoutes from "./routes/passwordRoutes.js";
+
 import appointmentRoutes from "./routes/appointmentRoutes.js"
 // 🔹 Setup __dirname (for ES modules)
 const __filename = fileURLToPath(import.meta.url);
@@ -25,6 +27,27 @@ console.log("🔍 Loaded MONGO_URL:", process.env.MONGO_URL);
 
 const PORT = process.env.PORT || 5000;
 const MONGOURL = process.env.MONGO_URL;
+// ✅ Allowed origins (frontend URLs)
+const allowedOrigins = [
+  "https://polurilakshmisatwika.github.io", // GitHub Pages main domain
+  "https://react-hms-backend.onrender.com", // Backend domain
+  "http://localhost:3000", // For local testing
+];
+
+// ✅ Configure CORS properly
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or Postman)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log("❌ Blocked by CORS:", origin);
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+}));
 
 mongoose.connect(MONGOURL)
   .then(() => {
@@ -42,6 +65,8 @@ app.use("/api/nurse", nurseRoutes);
 app.use("/api/doctor", doctorRoutes);
 app.use("/uploads", express.static("uploads"));
 app.use("/api/appointment", appointmentRoutes);
+app.use("/api/password", passwordRoutes);
+
 // ✅ Test route
 
 

@@ -28,7 +28,7 @@ export const sendResetEmail = async (email, name, resetLink) => {
               Please click the button below to set a new password:
             </p>
             <div style="text-align: center; margin: 25px 0;">
-              <a href="${resetLink}" target="_blank"
+              <a href="${resetLink}" 
                 style="background-color: #2E86C1; color: white; padding: 12px 24px; text-decoration: none;
                 border-radius: 6px; font-weight: bold;">🔐 Reset Password</a>
             </div>
@@ -96,7 +96,7 @@ export const sendWelcomeEmail = async (email, name, role) => {
               ${role === "doctor" || role === "nurse" ? "approved by the admin" : "created"}.
             </p>
             <div style="text-align: center; margin: 25px 0;">
-              <a href="${process.env.FRONTEND_URL}" target="_blank"
+              <a href="${process.env.FRONTEND_URL}"
                 style="background-color: #2E86C1; color: white; padding: 12px 24px; text-decoration: none;
                 border-radius: 6px; font-weight: bold;">🔗 Go to HMS Portal</a>
             </div>
