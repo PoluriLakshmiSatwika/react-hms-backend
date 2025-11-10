@@ -9,7 +9,6 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASS,
   },
 });
-
 transporter.sendMail({
   from: `"HMS Test" <${process.env.EMAIL_USER}>`,
   to: process.env.EMAIL_USER,
