@@ -30,7 +30,7 @@ const MONGOURL = process.env.MONGO_URL;
 // ✅ Allowed origins (frontend URLs)
 const allowedOrigins = [
   "https://polurilakshmisatwika.github.io", // GitHub Pages main domain
-  "https://react-hms-backend.onrender.com", // Backend domain
+  "https://react-hms-backend-2.onrender.com", // Backend domain
   "http://localhost:3000", // For local testing
 ];
 
