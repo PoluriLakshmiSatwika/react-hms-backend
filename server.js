@@ -23,13 +23,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 app.use(bodyParser.json());
 app.use(express.json());
-app.use(cors());
-
-// ✅ Debug log
-console.log("🔍 Loaded MONGO_URL:", process.env.MONGO_URL);
-
-const PORT = process.env.PORT || 8000;
-const MONGOURL = process.env.MONGO_URL;
+// ❌ remove this line → app.use(cors());
 
 // ✅ Allowed origins
 const allowedOrigins = [
@@ -38,7 +32,7 @@ const allowedOrigins = [
   "http://localhost:3000",
 ];
 
-// ✅ Configure CORS
+// ✅ Configure CORS properly
 app.use(
   cors({
     origin: function (origin, callback) {
@@ -50,17 +44,19 @@ app.use(
         callback(new Error("Not allowed by CORS"));
       }
     },
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   })
 );
 
 // ✅ Connect MongoDB
 mongoose
-  .connect(MONGOURL, { dbName: "hms" }) // 👈 This line forces 'hms' explicitly
+  .connect(process.env.MONGO_URL, { dbName: "hms" })
   .then(() => {
     console.log("✅ Database connected successfully to HMS");
-    app.listen(PORT, () => {
-      console.log(`🚀 Server is running on port ${PORT}`);
+    app.listen(process.env.PORT || 8000, () => {
+      console.log(`🚀 Server is running on port ${process.env.PORT || 8000}`);
     });
   })
   .catch((error) => console.log("❌ Database connection failed:", error));
