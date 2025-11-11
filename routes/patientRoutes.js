@@ -37,7 +37,7 @@ router.post("/register", async (req, res) => {
     res.status(500).json({ message: "Error registering patient" });
   }
 });
-import jwt from "jsonwebtoken";
+
 
 router.post("/login", async (req, res) => {
   try {
