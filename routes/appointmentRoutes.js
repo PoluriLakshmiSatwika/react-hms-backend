@@ -5,12 +5,11 @@ import Doctor from "../models/Doctor.js";
 import Payment from "../models/Payment.js";  // ✅ Add this
 const router = express.Router();
 
-/* ✅ FETCH DOCTORS BY DISEASE/SPECIALITY */
-router.get("/doctors/:disease", async (req, res) => {
+// ✅ Get doctors by specialty (for dropdown or filtering)
+router.get("/doctors/by-specialty/:specialty", async (req, res) => {
   try {
-    const disease = req.params.disease;
-
-    const doctors = await Doctor.find({ specialty: disease }).select(
+    const { specialty } = req.params;
+    const doctors = await Doctor.find({ specialty }).select(
       "fullName specialty department fee slots"
     );
 
@@ -20,28 +19,10 @@ router.get("/doctors/:disease", async (req, res) => {
 
     res.json({ success: true, count: doctors.length, doctors });
   } catch (error) {
+    console.error("❌ Error fetching doctors:", error);
     res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
 });
-
-// ✅ Get doctors by specialty (used in dropdown)
-router.get("/doctors/:specialty", async (req, res) => {
-  try {
-    const doctors = await Doctor.find({ specialty: req.params.specialty });
-
-    if (!doctors.length) {
-      return res.status(404).json({ success: false, message: "No doctors found" });
-    }
-
-    res.json({ success: true, doctors });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-
-
-
 
 router.post("/book", async (req, res) => {
   try {
