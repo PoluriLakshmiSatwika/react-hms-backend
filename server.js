@@ -68,7 +68,7 @@ app.use("/api/patient", patientRoutes);
 app.use("/api/nurse", nurseRoutes);
 app.use("/api/doctor", doctorRoutes);
 app.use("/uploads", express.static("uploads"));
-app.use("/api/appointment", appointmentRoutes);
+app.use("/api/appointments", appointmentRoutes);
 app.use("/api/password", passwordRoutes);
 
 // ✅ Test Route
