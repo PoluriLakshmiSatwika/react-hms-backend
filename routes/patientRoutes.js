@@ -37,7 +37,8 @@ router.post("/register", async (req, res) => {
     res.status(500).json({ message: "Error registering patient" });
   }
 });
-// ✅ Patient Login
+import jwt from "jsonwebtoken";
+
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -49,12 +50,43 @@ router.post("/login", async (req, res) => {
     if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
     const token = jwt.sign({ id: patient._id }, "secretkey", { expiresIn: "1h" });
-    res.status(200).json({ message: "Login successful", token });
+
+    res.status(200).json({
+      message: "Login successful",
+      token,
+      patient: {
+        _id: patient._id,
+        fullName: patient.fullName,
+        email: patient.email,
+        phone: patient.phone,
+        age: patient.age,
+        gender: patient.gender,
+      },
+    });
   } catch (error) {
     console.error("❌ Error logging in patient:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
+
+// // ✅ Patient Login
+// router.post("/login", async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
+
+//     const patient = await Patient.findOne({ email });
+//     if (!patient) return res.status(404).json({ message: "Patient not found" });
+
+//     const isMatch = await bcrypt.compare(password, patient.password);
+//     if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+
+//     const token = jwt.sign({ id: patient._id }, "secretkey", { expiresIn: "1h" });
+//     res.status(200).json({ message: "Login successful", token });
+//   } catch (error) {
+//     console.error("❌ Error logging in patient:", error);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// });
 
 
 
