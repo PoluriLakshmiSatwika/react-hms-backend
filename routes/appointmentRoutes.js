@@ -2,7 +2,7 @@ import express from "express";
 import Appointment from "../models/Appointment.js";
 import Patient from "../models/Patient.js";
 import Doctor from "../models/Doctor.js";
-
+import Payment from "../models/Payment.js";  // ✅ Add this
 const router = express.Router();
 
 /* ✅ FETCH DOCTORS BY DISEASE/SPECIALITY */
@@ -40,44 +40,6 @@ router.get("/doctors/:specialty", async (req, res) => {
 });
 
 
-// /* ✅ BOOK NEW APPOINTMENT */
-// router.post("/book", async (req, res) => {
-//   try {
-//     const { patientId, doctorId, disease, appointmentDate, slotTime } = req.body;
-
-//     if (!patientId || !doctorId || !disease || !appointmentDate || !slotTime) {
-//       return res.status(400).json({ success: false, message: "All fields are required" });
-//     }
-
-//     const patient = await Patient.findById(patientId);
-//     if (!patient) return res.status(404).json({ success: false, message: "Patient not found" });
-
-//     const doctor = await Doctor.findById(doctorId);
-//     if (!doctor) return res.status(404).json({ success: false, message: "Doctor not found" });
-
-//     const newAppointment = new Appointment({
-//       patientId,
-//       doctorId,
-//       disease,
-//       appointmentDate,
-//       slotTime,
-//       status: "Pending",
-//       feePaid: false,
-//       validityCount: 3
-//     });
-
-//     await newAppointment.save();
-
-//     res.status(201).json({
-//       success: true,
-//       message: "Appointment booked successfully (Pending payment)",
-//       data: newAppointment
-//     });
-//   } catch (error) {
-//     console.error("❌ Booking Error:", error);
-//     res.status(500).json({ success: false, message: "Server error", error: error.message });
-//   }
-// });
 
 
 
