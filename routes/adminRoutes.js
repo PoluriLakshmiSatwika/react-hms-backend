@@ -182,6 +182,20 @@ router.get("/doctors", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+// GET /api/admin/doctors/specialty/:specialty
+router.get("/doctors/specialty/:specialty", async (req, res) => {
+  try {
+    const { specialty } = req.params;
+    const doctors = await Doctor.find({ specialty: { $regex: specialty, $options: "i" } });
+    if (!doctors.length) {
+      return res.status(404).json({ success: false, message: "No doctors found" });
+    }
+    res.json(doctors);
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 
 // Nurses list
 router.get("/nurses", async (req, res) => {
