@@ -5,13 +5,15 @@ dotenv.config();
 
 /* ✅ Create Gmail transporter */
 const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
+  host:"smtp.gmail.com",
+  logger: true,
+  debug:true,
+  auth:{
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
 });
-
+  
 /* 🧩 Send Password Reset Email */
 export const sendResetEmail = async (email, name, resetLink) => {
   try {
