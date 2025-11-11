@@ -18,8 +18,9 @@ const getModelByRole = (role) => {
     default: return null;
   }
 };
-
-// 🔹 Forgot Password
+// ✅ Frontend link with query param
+const frontendURL = process.env.FRONTEND_URL || "http://localhost:3000/react-hms";
+const resetLink = `${frontendURL}/reset-password?token=${token}`;
 router.post("/forgot-password", async (req, res) => {
   try {
     const { email, role } = req.body;
@@ -37,8 +38,9 @@ router.post("/forgot-password", async (req, res) => {
     user.resetPasswordExpire = Date.now() + 15 * 60 * 1000; // 15 min
     await user.save();
 
-    // ✅ Frontend link with query param
-    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+    // ✅ Use deployed frontend URL
+    const frontendURL = process.env.FRONTEND_URL || "http://localhost:3000/react-hms";
+    const resetLink = `${frontendURL}/reset-password?token=${token}`;
 
     await sendResetEmail(email, user.fullName || "User", resetLink);
 
@@ -48,6 +50,7 @@ router.post("/forgot-password", async (req, res) => {
     res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
 });
+
 
 // 🔹 Reset Password
 router.post("/reset-password", async (req, res) => {
