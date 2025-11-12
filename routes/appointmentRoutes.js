@@ -24,48 +24,32 @@ router.get("/doctors/by-specialty/:specialty", async (req, res) => {
   }
 });
 
+// ✅ Book appointment (no payment required)
 router.post("/book", async (req, res) => {
   try {
     const { patientId, doctorId, disease, appointmentDate, slotTime } = req.body;
 
-    // ✅ Check payment exists
-    const payment = await Payment.findOne({
-      patientId,
-      doctorId,
-      remainingSlots: { $gt: 0 }
-    });
-
-    if (!payment) {
-      return res.status(400).json({
-        success: false,
-        message: "Payment required before booking"
-      });
+    if (!patientId || !doctorId || !disease || !appointmentDate || !slotTime) {
+      return res
+        .status(400)
+        .json({ success: false, message: "All fields are required" });
     }
 
-    // ✅ Reduce remaining slots
-    payment.remainingSlots -= 1;
-    await payment.save();
-
-    // ✅ Create appointment
     const appointment = await Appointment.create({
       patientId,
       doctorId,
       disease,
       appointmentDate,
       slotTime,
-      feePaid: true,
-      paymentId: payment._id,
-      validityCount: payment.remainingSlots,
-      status: "Confirmed",
+      feePaid: false, // no payment
+      status: "Pending",
     });
 
     res.status(201).json({
       success: true,
       message: "Appointment booked successfully",
       appointmentId: appointment._id,
-      remainingSlots: payment.remainingSlots
     });
-
   } catch (err) {
     console.error("❌ Appointment Error:", err);
     res.status(500).json({ success: false, message: "Server error" });
