@@ -38,7 +38,7 @@ router.post("/forgot-password", async (req, res) => {
     await user.save();
 
     // ✅ Frontend link with query param
-    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+    const resetLink = `${process.env.FRONTEND_URL}/#/reset-password?token=${token}`;
 
     await sendResetEmail(email, user.fullName || "User", resetLink);
 
