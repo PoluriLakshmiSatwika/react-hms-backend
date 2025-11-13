@@ -13,26 +13,22 @@ router.get("/doctors/:specialty", async (req, res) => {
     const doctors = await Doctor.find({ specialty })
       .select("fullName specialty department fee slots");
 
-    // ✅ Fetch all booked slots for these doctors on any date (to show real availability)
     const bookedAppointments = await Appointment.find({
       doctorId: { $in: doctors.map(d => d._id) },
       status: { $ne: 'Cancelled' }
     }).select("doctorId slotTime appointmentDate");
 
-    // ✅ Build a map of booked slots: { doctorId_date_slot: true }
     const bookedSlotsMap = {};
     bookedAppointments.forEach(apt => {
       const key = `${apt.doctorId}_${apt.appointmentDate?.toISOString().split('T')[0]}_${apt.slotTime}`;
       bookedSlotsMap[key] = true;
     });
 
-    // ✅ Mark slots as booked in the response
     const doctorsWithSlotStatus = doctors.map(doc => ({
       ...doc.toObject(),
       slots: doc.slots?.map(slot => ({
         time: slot,
-        isBooked: false // Default: all slots are available initially
-        // Note: Frontend will compare with selected date to mark as booked
+        isBooked: false
       }))
     }));
 
@@ -40,7 +36,7 @@ router.get("/doctors/:specialty", async (req, res) => {
       success: true,
       count: doctors.length,
       doctors: doctorsWithSlotStatus,
-      bookedSlotsMap  // Send booked slots map for frontend to use
+      bookedSlotsMap
     });
 
   } catch (error) {
@@ -93,16 +89,12 @@ router.post("/book", async (req, res) => {
       return res.status(400).json({ success: false, message: "All fields are required" });
     }
 
-    // 👉 Validate patient
     const patient = await Patient.findById(patientId);
     if (!patient) return res.status(404).json({ success: false, message: "Patient not found" });
 
-    // 👉 Validate doctor
     const doctor = await Doctor.findById(doctorId);
     if (!doctor) return res.status(404).json({ success: false, message: "Doctor not found" });
 
-    // 👉 Check if same doctor slot already booked (prevent duplicate reservations)
-    // Consider any appointment (pending or confirmed) as occupying the slot unless canceled
     const existing = await Appointment.findOne({
       doctorId,
       appointmentDate,
@@ -134,7 +126,7 @@ router.post("/book", async (req, res) => {
     res.status(201).json({
       success: true,
       message: "Appointment created (Pending)",
-      appointmentId: newAppointment._id,   // ✅ Needed for Payment API
+      appointmentId: newAppointment._id,
       data: newAppointment,
     });
 
@@ -152,7 +144,7 @@ router.put("/assign-nurses", async (req, res) => {
     const appointment = await Appointment.findById(appointmentId);
     if (!appointment) return res.status(404).json({ success: false, message: "Appointment not found" });
 
-    appointment.assignedNurses = nurseIds; // ✅ multiple nurses
+    appointment.assignedNurses = nurseIds;
     appointment.status = "Confirmed";
 
     await appointment.save();
@@ -165,6 +157,26 @@ router.put("/assign-nurses", async (req, res) => {
 
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/* ✅ CANCEL APPOINTMENT */
+router.put("/cancel/:appointmentId", async (req, res) => {
+  try {
+    const { appointmentId } = req.params;
+
+    const appointment = await Appointment.findById(appointmentId);
+    if (!appointment) {
+      return res.status(404).json({ success: false, message: "Appointment not found" });
+    }
+
+    appointment.status = "Cancelled";
+    await appointment.save();
+
+    res.json({ success: true, message: "Appointment cancelled successfully" });
+  } catch (error) {
+    console.error("❌ Cancel appointment error:", error);
+    res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
 });
 
