@@ -37,8 +37,6 @@ router.post("/register", async (req, res) => {
     res.status(500).json({ message: "Error registering patient" });
   }
 });
-
-
 // ✅ Patient Login
 router.post("/login", async (req, res) => {
   try {
@@ -50,20 +48,18 @@ router.post("/login", async (req, res) => {
       return res.status(404).json({ success: false, message: "Patient not found" });
     }
 
-    // 2️⃣ Compare password with bcrypt
+    // 2️⃣ Compare password
     const isMatch = await bcrypt.compare(password, patient.password);
     if (!isMatch) {
       return res.status(400).json({ success: false, message: "Invalid credentials" });
     }
 
-    // 3️⃣ Generate JWT token
-    const token = jwt.sign(
-      { id: patient._id },
-      process.env.JWT_SECRET || "secretkey",
-      { expiresIn: "1h" }
-    );
+    // 3️⃣ Generate JWT
+    const token = jwt.sign({ id: patient._id }, process.env.JWT_SECRET || "secretkey", {
+      expiresIn: "1h",
+    });
 
-    // 4️⃣ Return patient info and token
+    // 4️⃣ Return patient info from DB (no hardcoding!)
     res.status(200).json({
       success: true,
       message: "Login successful",
@@ -78,13 +74,41 @@ router.post("/login", async (req, res) => {
         medicalHistory: patient.medicalHistory,
       },
     });
-
   } catch (error) {
     console.error("❌ Error logging in patient:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
+// router.post("/login", async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
+
+//     const patient = await Patient.findOne({ email });
+//     if (!patient) return res.status(404).json({ message: "Patient not found" });
+
+//     const isMatch = await bcrypt.compare(password, patient.password);
+//     if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+
+//     const token = jwt.sign({ id: patient._id }, "secretkey", { expiresIn: "1h" });
+
+//     res.status(200).json({
+//       message: "Login successful",
+//       token,
+//       patient: {
+//         _id: patient._id,
+//         fullName: patient.fullName,
+//         email: patient.email,
+//         phone: patient.phone,
+//         age: patient.age,
+//         gender: patient.gender,
+//       },
+//     });
+//   } catch (error) {
+//     console.error("❌ Error logging in patient:", error);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// });
 
 // // ✅ Patient Login
 // router.post("/login", async (req, res) => {
