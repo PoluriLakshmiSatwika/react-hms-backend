@@ -39,19 +39,33 @@ router.post("/register", async (req, res) => {
 });
 
 
+// ✅ Patient Login
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // 1️⃣ Find patient by email
     const patient = await Patient.findOne({ email });
-    if (!patient) return res.status(404).json({ message: "Patient not found" });
+    if (!patient) {
+      return res.status(404).json({ success: false, message: "Patient not found" });
+    }
 
+    // 2️⃣ Compare password with bcrypt
     const isMatch = await bcrypt.compare(password, patient.password);
-    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+    if (!isMatch) {
+      return res.status(400).json({ success: false, message: "Invalid credentials" });
+    }
 
-    const token = jwt.sign({ id: patient._id }, "secretkey", { expiresIn: "1h" });
+    // 3️⃣ Generate JWT token
+    const token = jwt.sign(
+      { id: patient._id },
+      process.env.JWT_SECRET || "secretkey",
+      { expiresIn: "1h" }
+    );
 
+    // 4️⃣ Return patient info and token
     res.status(200).json({
+      success: true,
       message: "Login successful",
       token,
       patient: {
@@ -59,15 +73,18 @@ router.post("/login", async (req, res) => {
         fullName: patient.fullName,
         email: patient.email,
         phone: patient.phone,
-        age: patient.age,
-        gender: patient.gender,
+        dateOfBirth: patient.dateOfBirth,
+        bloodGroup: patient.bloodGroup,
+        medicalHistory: patient.medicalHistory,
       },
     });
+
   } catch (error) {
     console.error("❌ Error logging in patient:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ success: false, message: "Server error" });
   }
 });
+
 
 // // ✅ Patient Login
 // router.post("/login", async (req, res) => {
