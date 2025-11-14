@@ -13,7 +13,7 @@ import nurseRoutes from "./routes/nurseRoutes.js";
 import doctorRoutes from "./routes/doctorRoutes.js";
 import passwordRoutes from "./routes/passwordRoutes.js";
 import appointmentRoutes from "./routes/appointmentRoutes.js";
-
+import assignmentRoutes from "./routes/assignmentRoutes.js";
 // ✅ Load environment variables ONCE
 dotenv.config({ path: "./.env" });
 
@@ -70,7 +70,7 @@ app.use("/api/doctor", doctorRoutes);
 app.use("/uploads", express.static("uploads"));
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/password", passwordRoutes);
-
+app.use("/api/assignments", assignmentRoutes);
 // ✅ Test Route
 app.get("/", (req, res) => {
   res.send("Backend is running!");

@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const AssignmentSchema = new mongoose.Schema({
   appointmentId: {
-    type: Number,
+    type: String, // Change from Number → String
     required: true,
   },
   patientName: String,
