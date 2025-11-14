@@ -111,22 +111,26 @@ router.post("/login", async (req, res) => {
 
 
 /* =================== Fetch All Doctors or by Specialty =================== */
-router.get("/doctors", async (req, res) => {
-  try {
-    const { specialty } = req.query; // read specialty from query
 
-    // Build filter object
-    let filter = {};
-    if (specialty) {
-      // Case-insensitive filter
-      filter.specialty = { $regex: new RegExp(specialty, "i") };
+router.get("/doctors/:specialty", async (req, res) => {
+  try {
+    const { specialty } = req.params;
+
+    // Case-insensitive match on specialty
+    const doctors = await Doctor.find({
+      specialty: { $regex: `^${specialty}$`, $options: "i" }
+    });
+
+    if (!doctors.length) {
+      return res.json({ success: true, doctors: [], message: "No doctors found for this specialty" });
     }
 
-    const doctors = await Doctor.find(filter);
+    // Optional: prepare bookedSlotsMap if you want slot blocking logic
+    const bookedSlotsMap = {}; // populate if you have appointments collection
 
-    res.json({ success: true, data: doctors });
+    res.json({ success: true, doctors, bookedSlotsMap });
   } catch (err) {
-    console.error(err);
+    console.error("Fetch doctors error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
