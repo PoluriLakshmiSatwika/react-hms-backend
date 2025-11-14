@@ -137,67 +137,50 @@ router.get("/doctors/:specialty", async (req, res) => {
 
 
 /* =================== Fetch All Appointments =================== */
-router.get("/appointments", async (req, res) => {
+// GET /api/appointments/doctor/:doctorId
+router.get("/doctor/:doctorId", async (req, res) => {
   try {
-    // Fetch appointments with assigned nurses (if any)
-    const appointments = await Assignment.find().populate("appointmentId").populate("assignedNurses");
+    const appointments = await Assignment.find({ doctorId: req.params.doctorId });
     res.json({ success: true, data: appointments });
   } catch (err) {
-    console.error(err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
+
 /* =================== Fetch Available Nurses =================== */
+// GET /api/doctors/nurses
 router.get("/nurses", async (req, res) => {
   try {
     const nurses = await Nurse.find({ available: true });
     res.json({ success: true, data: nurses });
   } catch (err) {
-    console.error(err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
+
 /* =================== Assign Nurses to Appointment =================== */
-router.put("/assign-nurses", async (req, res) => {
+// PUT /api/assignments
+router.put("/assignments", async (req, res) => {
   try {
     const { appointmentId, nurseIds } = req.body;
-
-    if (!appointmentId || !Array.isArray(nurseIds)) {
+    if (!appointmentId || !Array.isArray(nurseIds))
       return res.status(400).json({ success: false, message: "Invalid data" });
-    }
 
     const nurses = await Nurse.find({ _id: { $in: nurseIds } });
-    const nurseData = nurses.map(n => ({ nurseId: n._id, nurseName: n.fullName }));
+    const nurseData = nurses.map((n) => ({ nurseId: n._id, nurseName: n.fullName }));
 
-    let assignment = await Assignment.findOne({ appointmentId });
-
+    let assignment = await Assignment.findOne({ _id: appointmentId });
     if (assignment) {
       assignment.assignedNurses = nurseData;
       await assignment.save();
     } else {
-      assignment = await Assignment.create({ appointmentId, assignedNurses: nurseData });
+      assignment = await Assignment.create({ _id: appointmentId, assignedNurses: nurseData });
     }
 
-    // Optional: send email notifications to nurses
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-    });
-
-    nurses.forEach(nurse => {
-      transporter.sendMail({
-        from: `"HMS Admin" <${process.env.EMAIL_USER}>`,
-        to: nurse.email,
-        subject: "New Appointment Assigned",
-        text: `Hello ${nurse.fullName},\n\nYou have been assigned to an appointment on ${assignment.appointmentId.date}.\n\nRegards,\nHMS System`,
-      });
-    });
-
-    res.json({ success: true, message: "Nurses assigned successfully", data: assignment });
+    res.json({ success: true, data: assignment });
   } catch (err) {
-    console.error(err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
