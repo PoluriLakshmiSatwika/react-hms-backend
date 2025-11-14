@@ -58,21 +58,62 @@ router.post("/register", upload.single("uploadId"), async (req, res) => {
 /* =================== Doctor Login =================== */
 router.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ message: "Email and password are required" });
+    let { email, password } = req.body;
 
-    const doctor = await Doctor.findOne({ email });
-    if (!doctor) return res.status(400).json({ message: "Invalid email or password" });
+    if (!email || !password)
+      return res.status(400).json({ success: false, message: "Email & password required" });
+
+    // ✅ Normalize email
+    email = email.trim().toLowerCase();
+
+    const doctor = await doctor.findOne({ email });
+    if (!doctor)
+      return res.status(404).json({ success: false, message: "Invalid credentials" });
 
     const isMatch = await bcrypt.compare(password, doctor.password);
-    if (!isMatch) return res.status(400).json({ message: "Invalid email or password" });
+    if (!isMatch)
+      return res.status(400).json({ success: false, message: "Invalid credentials" });
 
-    res.status(200).json({ message: "Login successful", doctorId: doctor._id });
-  } catch (err) {
-    console.error("Doctor login error:", err);
-    res.status(500).json({ message: "Server error" });
+    const token = jwt.sign({ id: doctor._id }, process.env.JWT_SECRET || "secretkey", {
+      expiresIn: "1h",
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Login successful",
+      token,
+      doctor: {
+          id: data.doctor._id,
+          fullName: data.doctor.fullName,
+          email: data.doctor.email,
+          phone: data.doctor.phone,
+          department: data.doctor.department,
+          specialty: data.doctor.specialty,
+      },
+    });
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 });
+
+// router.post("/login", async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
+//     if (!email || !password) return res.status(400).json({ message: "Email and password are required" });
+
+//     const doctor = await Doctor.findOne({ email });
+//     if (!doctor) return res.status(400).json({ message: "Invalid email or password" });
+
+//     const isMatch = await bcrypt.compare(password, doctor.password);
+//     if (!isMatch) return res.status(400).json({ message: "Invalid email or password" });
+
+//     res.status(200).json({ message: "Login successful", doctorId: doctor._id });
+//   } catch (err) {
+//     console.error("Doctor login error:", err);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// });
 
 /* =================== Fetch All Doctors =================== */
 router.get("/doctors", async (req, res) => {
