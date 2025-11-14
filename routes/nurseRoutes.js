@@ -1,38 +1,52 @@
 import express from "express";
 import multer from "multer";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 import PendingStaff from "../models/PendingStaff.js";
-import Nurse from "../models/Nurse.js";  // ✅ Make sure the path is correct
+import Nurse from "../models/Nurse.js";
+import Appointment from "../models/Appointment.js";
 
 const router = express.Router();
 
-// ✅ Multer configuration for file upload
+// ================== JWT Middleware ==================
+const protect = async (req, res, next) => {
+  let token = req.headers.authorization?.split(" ")[1]; // Bearer token
+  if (!token) return res.status(401).json({ success: false, message: "Not authorized, token missing" });
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "secretkey");
+    req.nurse = await Nurse.findById(decoded.id).select("-password");
+    if (!req.nurse) return res.status(401).json({ success: false, message: "Not authorized" });
+    next();
+  } catch (err) {
+    console.error(err);
+    res.status(401).json({ success: false, message: "Token invalid" });
+  }
+};
+
+// ================== Multer Setup ==================
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "uploads/"); // make sure this folder exists
-  },
-  filename: function (req, file, cb) {
+  destination: (req, file, cb) => cb(null, "uploads/"),
+  filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     cb(null, uniqueSuffix + "-" + file.originalname);
   },
 });
 const upload = multer({ storage });
 
-// 🟡 Nurse Registration (pending_staff) with file upload
+// ================== Nurse Registration ==================
 router.post("/register", upload.single("uploadId"), async (req, res) => {
   try {
     const { fullName, email, phone, department, shiftTiming, password } = req.body;
 
-    const existingNurse = await PendingStaff.findOne({ email });
-    if (existingNurse) {
-      return res.status(400).json({ message: "Nurse already registered and pending approval" });
-    }
+    const existing = await PendingStaff.findOne({ email: email.toLowerCase() });
+    if (existing) return res.status(400).json({ success: false, message: "Nurse already registered and pending approval" });
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newPendingNurse = new PendingStaff({
       fullName,
-      email,
+      email: email.toLowerCase(),
       phone,
       role: "nurse",
       department,
@@ -42,57 +56,128 @@ router.post("/register", upload.single("uploadId"), async (req, res) => {
       status: "pending",
     });
 
-    await newPendingNurse.save(); // ✅ This line stores the document
-    res.status(201).json({ message: "Nurse registration is pending for admin approval,try login to dashboard after some time", nurse: newPendingNurse });
-  } catch (error) {
-    console.error("Error registering nurse:", error);
-    res.status(500).json({ message: "Server error" });
+    await newPendingNurse.save();
+    res.status(201).json({ success: true, message: "Nurse registration is pending admin approval", nurse: newPendingNurse });
+  } catch (err) {
+    console.error("Registration error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
-// 🟢 Nurse Login
+// ================== Nurse Login ==================
 router.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ success: false, message: "Email & password required" });
 
-    // Step 1: Check if nurse exists in approved nurses table
+    email = email.toLowerCase().trim();
     const nurse = await Nurse.findOne({ email });
+    if (!nurse) return res.status(404).json({ success: false, message: "Invalid credentials" });
 
-    if (!nurse) {
-      // Step 2: Check if still pending
-      const pending = await PendingStaff.findOne({ email, role: "nurse" });
-
-      if (pending) {
-        return res.status(403).json({
-          message:
-            "Your account is pending admin approval. Please try again later.",
-        });
-      }
-
-      return res
-        .status(404)
-        .json({ message: "No nurse found with this email address" });
-    }
-
-    // Step 3: Verify password
     const isMatch = await bcrypt.compare(password, nurse.password);
-    if (!isMatch) {
-      return res.status(401).json({ message: "Invalid password" });
-    }
+    if (!isMatch) return res.status(400).json({ success: false, message: "Invalid credentials" });
 
-    // Step 4: Successful login
-    res.status(200).json({
+    const token = jwt.sign({ id: nurse._id }, process.env.JWT_SECRET || "secretkey", { expiresIn: "1h" });
+
+    res.json({
+      success: true,
       message: "Nurse login successful",
+      token,
       nurse: {
         id: nurse._id,
-        name: nurse.fullName,
+        fullName: nurse.fullName,
         email: nurse.email,
         department: nurse.department,
+        phone: nurse.phone,
+        shiftTiming: nurse.shiftTiming,
       },
     });
-  } catch (error) {
-    console.error("Login error:", error);
-    res.status(500).json({ message: "Server error during login" });
+  } catch (err) {
+    console.error("Login error:", err);
+    res.status(500).json({ success: false, message: "Server error during login" });
   }
 });
+
+// ================== Fetch Assignments ==================
+router.get("/assignments", protect, async (req, res) => {
+  try {
+    const appointments = await Appointment.find({ assignedNurse: { $in: [req.nurse._id] } })
+      .populate("patientId", "fullName email phone")
+      .populate("doctorId", "fullName")
+      .sort({ appointmentDate: 1 });
+
+    res.json({ success: true, data: appointments });
+  } catch (err) {
+    console.error("Fetch assignments error:", err);
+    res.status(500).json({ success: false, message: "Server error fetching assignments" });
+  }
+});
+
+// ================== Update Availability ==================
+router.put("/availability", protect, async (req, res) => {
+  try {
+    const { available } = req.body;
+    await Nurse.findByIdAndUpdate(req.nurse._id, { available });
+    res.json({ success: true, message: `Availability set to ${available ? "Online" : "Offline"}` });
+  } catch (err) {
+    console.error("Update availability error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// ================== Accept Assignment ==================
+router.put("/assignments/:id/accept", protect, async (req, res) => {
+  try {
+    const appointmentId = req.params.id;
+    const nurse = req.nurse;
+
+    if (!nurse.available) return res.status(400).json({ success: false, message: "You are offline. Go online to accept appointments." });
+
+    const appt = await Appointment.findById(appointmentId);
+    if (!appt) return res.status(404).json({ success: false, message: "Appointment not found" });
+
+    if (appt.status === "Accepted" && !appt.assignedNurse.includes(nurse._id))
+      return res.status(400).json({ success: false, message: "Another nurse has already accepted this appointment." });
+
+    if (!appt.assignedNurse.includes(nurse._id))
+      return res.status(403).json({ success: false, message: "You are not assigned to this appointment" });
+
+    if (appt.status !== "Pending")
+      return res.status(400).json({ success: false, message: "This appointment is no longer in Pending state" });
+
+    appt.status = "Accepted";
+    await appt.save();
+
+    res.json({ success: true, data: appt });
+  } catch (err) {
+    console.error("Accept assignment error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// ================== Complete Assignment ==================
+router.put("/assignments/:id/complete", protect, async (req, res) => {
+  try {
+    const appointmentId = req.params.id;
+    const nurse = req.nurse;
+
+    const appt = await Appointment.findById(appointmentId);
+    if (!appt) return res.status(404).json({ success: false, message: "Appointment not found" });
+
+    if (!appt.assignedNurse.includes(nurse._id))
+      return res.status(403).json({ success: false, message: "You are not assigned to this appointment" });
+
+    if (appt.status !== "Accepted")
+      return res.status(400).json({ success: false, message: "You must accept the appointment before completing it" });
+
+    appt.status = "Completed";
+    await appt.save();
+
+    res.json({ success: true, data: appt });
+  } catch (err) {
+    console.error("Complete assignment error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
 export default router;
