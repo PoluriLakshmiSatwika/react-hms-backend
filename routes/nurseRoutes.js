@@ -204,20 +204,21 @@ router.get("/assignments", protectNurse, async (req, res) => {
     })
       .populate("patientId", "fullName email phone")
       .lean();
-      
-    // Add a fallback field `patientName` if patientId is missing
+
+    // Add display-friendly fields
     const formattedAssignments = assignments.map(a => ({
       ...a,
-      displayPatientName: a.patientId?.fullName || a.patientName || "Unknown"
+      displayPatientName: a.patientId?.fullName || "Unknown",
+      displayPatientPhone: a.patientId?.phone || "N/A"
     }));
 
-
-    res.json({ success: true, data: assignments });
+    res.json({ success: true, data: formattedAssignments });
   } catch (err) {
     console.error("Assignments fetch error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
+
 
 // ================== Accept Assignment ==================
 // Accept Assignment
