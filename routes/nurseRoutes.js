@@ -110,7 +110,9 @@ router.get("/assignments", protectNurse, async (req, res) => {
     // Find assignments where this nurse is assigned
     const assignments = await Assignment.find({
       "assignedNurses.nurseId": nurseId
-    });
+    })
+     .populate("patientId", "fullName")  // only if Assignment has patientId as ObjectId
+  .lean(); // optional, returns plain JS objects
 
     res.json({ success: true, data: assignments });
   } catch (err) {
