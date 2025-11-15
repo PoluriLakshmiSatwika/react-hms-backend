@@ -1,4 +1,4 @@
-import Nurse from "../models/nurseModel.js";
+import Nurse from "../models/Nurse.js";
 
 export const getNurseProfile = async (req, res) => {
   try {
