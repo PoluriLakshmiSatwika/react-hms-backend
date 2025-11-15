@@ -222,10 +222,12 @@ router.put("/assignments/:id/accept", protectNurse, async (req, res) => {
     if (!assignment)
       return res.status(404).json({ success: false, message: "Assignment not found" });
 
-    // Check if this nurse is assigned
-    const isAssigned = assignment.assignedNurses.some(
-      (n) => n.nurseId.toString() === nurse._id.toString()
-    );
+    // Safely check assigned nurse
+    const isAssigned = Array.isArray(assignment.assignedNurses) &&
+      assignment.assignedNurses.some(n =>
+        n.nurseId && n.nurseId.toString() === nurse._id.toString()
+      );
+
     if (!isAssigned)
       return res.status(403).json({ success: false, message: "You are not assigned to this appointment" });
 
