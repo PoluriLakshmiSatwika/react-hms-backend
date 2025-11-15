@@ -204,6 +204,13 @@ router.get("/assignments", protectNurse, async (req, res) => {
     })
       .populate("patientId", "fullName email phone")
       .lean();
+      
+    // Add a fallback field `patientName` if patientId is missing
+    const formattedAssignments = assignments.map(a => ({
+      ...a,
+      displayPatientName: a.patientId?.fullName || a.patientName || "Unknown"
+    }));
+
 
     res.json({ success: true, data: assignments });
   } catch (err) {
@@ -213,6 +220,7 @@ router.get("/assignments", protectNurse, async (req, res) => {
 });
 
 // ================== Accept Assignment ==================
+// Accept Assignment
 router.put("/assignments/:id/accept", protectNurse, async (req, res) => {
   try {
     const assignmentId = req.params.id;
@@ -222,28 +230,25 @@ router.put("/assignments/:id/accept", protectNurse, async (req, res) => {
     if (!assignment)
       return res.status(404).json({ success: false, message: "Assignment not found" });
 
-    // Safely check assigned nurse
     const isAssigned = Array.isArray(assignment.assignedNurses) &&
-      assignment.assignedNurses.some(n =>
-        n.nurseId && n.nurseId.toString() === nurse._id.toString()
-      );
+      assignment.assignedNurses.some(n => n.nurseId && n.nurseId.toString() === nurse._id.toString());
 
     if (!isAssigned)
       return res.status(403).json({ success: false, message: "You are not assigned to this appointment" });
 
-    // Only allow accept if pending
     if (assignment.status && assignment.status !== "Pending")
       return res.status(400).json({ success: false, message: "This assignment is no longer pending" });
 
-    assignment.status = "Accepted";
-    await assignment.save();
+    // ✅ Update only the status
+    await Assignment.updateOne({ _id: assignmentId }, { status: "Accepted" });
 
-    res.json({ success: true, data: assignment });
+    res.json({ success: true, message: "Assignment accepted" });
   } catch (err) {
     console.error("Accept assignment error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
+
 
 // ================== Complete Assignment ==================
 router.put("/assignments/:id/complete", protectNurse, async (req, res) => {
