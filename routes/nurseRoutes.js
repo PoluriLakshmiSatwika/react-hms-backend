@@ -7,6 +7,7 @@ import Nurse from "../models/Nurse.js";
 import Appointment from "../models/Appointment.js";
 import { getNurseProfile } from "../controllers/nurseController.js";
 import { protectNurse } from "../middleware/authMiddleware.js"; // middleware to verify JWT
+import Assignment from "../models/Assignment.js"; // adjust path as needed
 
 const router = express.Router();
 
