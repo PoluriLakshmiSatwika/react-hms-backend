@@ -5,6 +5,8 @@ import jwt from "jsonwebtoken";
 import PendingStaff from "../models/PendingStaff.js";
 import Nurse from "../models/Nurse.js";
 import Appointment from "../models/Appointment.js";
+import { getNurseProfile } from "../controllers/nurseController.js";
+import { protectNurse } from "../middleware/authMiddleware.js"; // middleware to verify JWT
 
 const router = express.Router();
 
@@ -97,7 +99,8 @@ router.post("/login", async (req, res) => {
     res.status(500).json({ success: false, message: "Server error during login" });
   }
 });
-
+// Add this route
+router.get("/profile", protectNurse, getNurseProfile);
 // ================== Fetch Assignments ==================
 router.get("/assignments", protect, async (req, res) => {
   try {
