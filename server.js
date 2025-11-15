@@ -32,16 +32,20 @@ const allowedOrigins = [
   "http://localhost:3000",
 ];
 
-// ✅ Configure CORS properly
+
+// ✅ Proper CORS Middleware
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin) return callback(null, true);
+      if (!origin) {
+        // 🔥 Allow requests with no origin (GitHub Pages, mobile apps)
+        return callback(null, true);
+      }
       if (allowedOrigins.includes(origin)) {
-        callback(null, true);
+        return callback(null, true);
       } else {
         console.log("❌ Blocked by CORS:", origin);
-        callback(new Error("Not allowed by CORS"));
+        return callback(new Error("Not allowed by CORS"));
       }
     },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -49,6 +53,10 @@ app.use(
     credentials: true,
   })
 );
+
+// 🔥 FIX: Preflight handler for OPTIONS
+app.options("*", cors());
+
 
 // ✅ Connect MongoDB
 mongoose
