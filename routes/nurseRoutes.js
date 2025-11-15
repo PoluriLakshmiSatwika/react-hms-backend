@@ -102,13 +102,13 @@ router.post("/login", async (req, res) => {
 // Add this route
 router.get("/profile", protectNurse, getNurseProfile);
 // ================== Fetch Assignments ==================
-
-
 router.get("/assignments", protectNurse, async (req, res) => {
   try {
-    const nurseId = req.nurse.id;
+    const nurseId = req.nurse._id; // use ObjectId directly
+
+    // ✅ Match nurseId inside assignedNurses array as ObjectId
     const assignments = await Appointment.find({
-      "assignedNurses.nurseId": nurseId
+      "assignedNurses.nurseId": mongoose.Types.ObjectId(nurseId)
     }).populate("patientId", "fullName email phone");
 
     res.json({ success: true, data: assignments });
@@ -117,6 +117,7 @@ router.get("/assignments", protectNurse, async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
+
 //============== Update Availability ==================
 router.put("/availability", protectNurse, async (req, res) => {
   try {
