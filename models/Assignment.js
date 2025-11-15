@@ -2,10 +2,14 @@ import mongoose from "mongoose";
 
 const AssignmentSchema = new mongoose.Schema({
   appointmentId: {
-    type: String, // Change from Number → String
+    type: String,
     required: true,
   },
-  patientName: String,
+  patientId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Patient",  // ✅ matches your Patient model
+    required: true,
+  },
   date: String,
   time: String,
   assignedNurses: [

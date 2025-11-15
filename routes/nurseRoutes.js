@@ -111,7 +111,7 @@ router.get("/assignments", protectNurse, async (req, res) => {
     const assignments = await Assignment.find({
       "assignedNurses.nurseId": nurseId
     })
-     .populate("patientId", "fullName")  // only if Assignment has patientId as ObjectId
+     .populate("patientId", "fullName email phone")  // only if Assignment has patientId as ObjectId
   .lean(); // optional, returns plain JS objects
 
     res.json({ success: true, data: assignments });
