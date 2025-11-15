@@ -102,22 +102,23 @@ router.post("/login", async (req, res) => {
 // Add this route
 router.get("/profile", protectNurse, getNurseProfile);
 // ================== Fetch Assignments ==================
-router.get("/assignments", protect, async (req, res) => {
-  try {
-    const appointments = await Appointment.find({ assignedNurse: { $in: [req.nurse._id] } })
-      .populate("patientId", "fullName email phone")
-      .populate("doctorId", "fullName")
-      .sort({ appointmentDate: 1 });
 
-    res.json({ success: true, data: appointments });
+
+router.get("/assignments", protectNurse, async (req, res) => {
+  try {
+    const nurseId = req.nurse.id;
+    const assignments = await Appointment.find({
+      "assignedNurses.nurseId": nurseId
+    }).populate("patientId", "fullName email phone");
+
+    res.json({ success: true, data: assignments });
   } catch (err) {
-    console.error("Fetch assignments error:", err);
-    res.status(500).json({ success: false, message: "Server error fetching assignments" });
+    console.error("Assignments fetch error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 });
-
-// ================== Update Availability ==================
-router.put("/availability", protect, async (req, res) => {
+//============== Update Availability ==================
+router.put("/availability", protectNurse, async (req, res) => {
   try {
     const { available } = req.body;
     await Nurse.findByIdAndUpdate(req.nurse._id, { available });
@@ -129,7 +130,7 @@ router.put("/availability", protect, async (req, res) => {
 });
 
 // ================== Accept Assignment ==================
-router.put("/assignments/:id/accept", protect, async (req, res) => {
+router.put("/assignments/:id/accept", protectNurse, async (req, res) => {
   try {
     const appointmentId = req.params.id;
     const nurse = req.nurse;
@@ -159,7 +160,7 @@ router.put("/assignments/:id/accept", protect, async (req, res) => {
 });
 
 // ================== Complete Assignment ==================
-router.put("/assignments/:id/complete", protect, async (req, res) => {
+router.put("/assignments/:id/complete", protectNurse, async (req, res) => {
   try {
     const appointmentId = req.params.id;
     const nurse = req.nurse;
