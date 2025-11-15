@@ -104,12 +104,12 @@ router.get("/profile", protectNurse, getNurseProfile);
 // ================== Fetch Assignments ==================
 router.get("/assignments", protectNurse, async (req, res) => {
   try {
-    const nurseId = req.nurse._id; // use ObjectId directly
+    const nurseId = req.nurse._id.toString(); // convert to string
 
-    // ✅ Match nurseId inside assignedNurses array as ObjectId
-    const assignments = await Appointment.find({
-      "assignedNurses.nurseId": mongoose.Types.ObjectId(nurseId)
-    }).populate("patientId", "fullName email phone");
+    // Find assignments where this nurse is assigned
+    const assignments = await Assignment.find({
+      "assignedNurses.nurseId": nurseId
+    });
 
     res.json({ success: true, data: assignments });
   } catch (err) {
@@ -117,7 +117,6 @@ router.get("/assignments", protectNurse, async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
-
 //============== Update Availability ==================
 router.put("/availability", protectNurse, async (req, res) => {
   try {
@@ -133,27 +132,27 @@ router.put("/availability", protectNurse, async (req, res) => {
 // ================== Accept Assignment ==================
 router.put("/assignments/:id/accept", protectNurse, async (req, res) => {
   try {
-    const appointmentId = req.params.id;
+    const assignmentId = req.params.id;
     const nurse = req.nurse;
 
-    if (!nurse.available) return res.status(400).json({ success: false, message: "You are offline. Go online to accept appointments." });
+    if (!nurse.available)
+      return res.status(400).json({ success: false, message: "You are offline. Go online to accept appointments." });
 
-    const appt = await Appointment.findById(appointmentId);
-    if (!appt) return res.status(404).json({ success: false, message: "Appointment not found" });
+    const assignment = await Assignment.findById(assignmentId);
+    if (!assignment) return res.status(404).json({ success: false, message: "Assignment not found" });
 
-    if (appt.status === "Accepted" && !appt.assignedNurse.includes(nurse._id))
-      return res.status(400).json({ success: false, message: "Another nurse has already accepted this appointment." });
-
-    if (!appt.assignedNurse.includes(nurse._id))
+    // Check if this nurse is assigned
+    const isAssigned = assignment.assignedNurses.some(n => n.nurseId === nurse._id.toString());
+    if (!isAssigned)
       return res.status(403).json({ success: false, message: "You are not assigned to this appointment" });
 
-    if (appt.status !== "Pending")
-      return res.status(400).json({ success: false, message: "This appointment is no longer in Pending state" });
+    if (assignment.status && assignment.status !== "Pending")
+      return res.status(400).json({ success: false, message: "This assignment is no longer pending" });
 
-    appt.status = "Accepted";
-    await appt.save();
+    assignment.status = "Accepted";
+    await assignment.save();
 
-    res.json({ success: true, data: appt });
+    res.json({ success: true, data: assignment });
   } catch (err) {
     console.error("Accept assignment error:", err);
     res.status(500).json({ success: false, message: "Server error" });
@@ -163,26 +162,28 @@ router.put("/assignments/:id/accept", protectNurse, async (req, res) => {
 // ================== Complete Assignment ==================
 router.put("/assignments/:id/complete", protectNurse, async (req, res) => {
   try {
-    const appointmentId = req.params.id;
+    const assignmentId = req.params.id;
     const nurse = req.nurse;
 
-    const appt = await Appointment.findById(appointmentId);
-    if (!appt) return res.status(404).json({ success: false, message: "Appointment not found" });
+    const assignment = await Assignment.findById(assignmentId);
+    if (!assignment) return res.status(404).json({ success: false, message: "Assignment not found" });
 
-    if (!appt.assignedNurse.includes(nurse._id))
+    const isAssigned = assignment.assignedNurses.some(n => n.nurseId === nurse._id.toString());
+    if (!isAssigned)
       return res.status(403).json({ success: false, message: "You are not assigned to this appointment" });
 
-    if (appt.status !== "Accepted")
-      return res.status(400).json({ success: false, message: "You must accept the appointment before completing it" });
+    if (assignment.status !== "Accepted")
+      return res.status(400).json({ success: false, message: "You must accept the assignment before completing it" });
 
-    appt.status = "Completed";
-    await appt.save();
+    assignment.status = "Completed";
+    await assignment.save();
 
-    res.json({ success: true, data: appt });
+    res.json({ success: true, data: assignment });
   } catch (err) {
     console.error("Complete assignment error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
+
 
 export default router;
