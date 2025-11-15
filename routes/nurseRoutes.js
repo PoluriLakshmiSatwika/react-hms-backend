@@ -223,31 +223,33 @@ router.get("/assignments", protectNurse, async (req, res) => {
 // Accept Assignment
 router.put("/assignments/:id/accept", protectNurse, async (req, res) => {
   try {
-    const assignmentId = req.params.id;
+    const { id } = req.params;
     const nurse = req.nurse;
 
-    const assignment = await Assignment.findById(assignmentId);
+    const assignment = await Assignment.findById(id);
     if (!assignment)
       return res.status(404).json({ success: false, message: "Assignment not found" });
 
-    const isAssigned = Array.isArray(assignment.assignedNurses) &&
-      assignment.assignedNurses.some(n => n.nurseId && n.nurseId.toString() === nurse._id.toString());
+    const nurseEntry = assignment.assignedNurses.find(
+      (n) => n.nurseId === nurse._id.toString()
+    );
 
-    if (!isAssigned)
+    if (!nurseEntry)
       return res.status(403).json({ success: false, message: "You are not assigned to this appointment" });
 
-    if (assignment.status && assignment.status !== "Pending")
-      return res.status(400).json({ success: false, message: "This assignment is no longer pending" });
+    if (nurseEntry.status !== "Pending")
+      return res.status(400).json({ success: false, message: "Already accepted or completed" });
 
-    // ✅ Update only the status
-    await Assignment.updateOne({ _id: assignmentId }, { status: "Accepted" });
+    nurseEntry.status = "Accepted";
+    await assignment.save();
 
-    res.json({ success: true, message: "Assignment accepted" });
+    res.json({ success: true, data: assignment });
   } catch (err) {
     console.error("Accept assignment error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
+
 
 
 // ================== Complete Assignment ==================
