@@ -32,21 +32,16 @@ const allowedOrigins = [
   "http://localhost:3000",
 ];
 
-
-// ✅ Proper CORS Middleware
+// CORS middleware
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin) {
-        // 🔥 Allow requests with no origin (GitHub Pages, mobile apps)
-        return callback(null, true);
-      }
+      if (!origin) return callback(null, true); // Allow apps without origin (GitHub Pages)
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
-      } else {
-        console.log("❌ Blocked by CORS:", origin);
-        return callback(new Error("Not allowed by CORS"));
       }
+      console.log("❌ Blocked by CORS:", origin);
+      return callback(new Error("Not allowed by CORS"));
     },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -54,9 +49,16 @@ app.use(
   })
 );
 
-// 🔥 FIX: Preflight handler for OPTIONS
-app.options("*", cors());
-
+// Fix OPTIONS preflight for Express v5
+app.use((req, res, next) => {
+  if (req.method === "OPTIONS") {
+    res.setHeader("Access-Control-Allow-Origin", req.headers.origin || "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 // ✅ Connect MongoDB
 mongoose
