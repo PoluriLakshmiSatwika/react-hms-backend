@@ -9,12 +9,15 @@ const appointmentSchema = new mongoose.Schema({
   feePaid: { type: Boolean, default: false },
   paymentId: { type: mongoose.Schema.Types.ObjectId, ref: "Payment" },
   validityCount: { type: Number, default: 3 },
+
+  // ✅ FIXED assignedNurses schema
   assignedNurses: [
     {
-      nurseId: { type: mongoose.Schema.Types.ObjectId, ref: "Nurse" },
-      nurseName: String,
+      nurseId: { type: mongoose.Schema.Types.ObjectId, ref: "Nurse", required: true },
+      nurseName: { type: String, required: true }
     }
   ],
+
   status: {
     type: String,
     enum: ["Pending", "Confirmed", "Completed", "Cancelled"],
@@ -22,6 +25,5 @@ const appointmentSchema = new mongoose.Schema({
   },
   createdAt: { type: Date, default: Date.now }
 });
-
 
 export default mongoose.model("Appointment", appointmentSchema);

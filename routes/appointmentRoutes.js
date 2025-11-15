@@ -49,7 +49,8 @@ router.get("/patient/:patientId", async (req, res) => {
   try {
     const appointments = await Appointment.find({ patientId: req.params.patientId })
       .populate("doctorId", "fullName department specialty")
-      .populate("assignedNurse", "fullName shift");
+      .populate("assignedNurses.nurseId", "fullName shift"); // ✅ FIXED
+
 
     res.json({
       success: true,
@@ -67,7 +68,7 @@ router.get("/doctor/:doctorId", async (req, res) => {
   try {
     const appointments = await Appointment.find({ doctorId: req.params.doctorId })
       .populate("patientId", "fullName email phone")
-      .populate("assignedNurse", "fullName shift available");
+      .populate("assignedNurses.nurseId", "fullName shift available"); // ✅ FIXED
 
     res.json({
       success: true,
@@ -115,7 +116,7 @@ router.post("/book", async (req, res) => {
       disease,
       appointmentDate,
       slotTime,
-      assignedNurse: null,
+      assignedNurses: [], // ✅ FIXED (was assignedNurse: null)
       status: "Pending",
       feePaid: false,
       validityCount: 3,
