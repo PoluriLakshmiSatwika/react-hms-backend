@@ -160,7 +160,6 @@ router.get("/nurses", async (req, res) => {
 });
 
 
-/* =================== Assign Nurses to Appointment =================== */
 // PUT /api/assignments
 router.put("/assignments", async (req, res) => {
   try {
@@ -168,19 +167,21 @@ router.put("/assignments", async (req, res) => {
     if (!appointmentId || !Array.isArray(nurseIds))
       return res.status(400).json({ success: false, message: "Invalid data" });
 
+    // ✅ Fetch nurses
     const nurses = await Nurse.find({ _id: { $in: nurseIds } });
     const nurseData = nurses.map((n) => ({ nurseId: n._id, nurseName: n.fullName }));
 
-    let assignment = await Assignment.findOne({ _id: appointmentId });
-    if (assignment) {
-      assignment.assignedNurses = nurseData;
-      await assignment.save();
-    } else {
-      assignment = await Assignment.create({ _id: appointmentId, assignedNurses: nurseData });
-    }
+    // ✅ Fetch appointment
+    const appointment = await Appointment.findById(appointmentId);
+    if (!appointment) return res.status(404).json({ success: false, message: "Appointment not found" });
 
-    res.json({ success: true, data: assignment });
+    // ✅ Assign nurses
+    appointment.assignedNurses = nurseData;
+    await appointment.save();
+
+    res.json({ success: true, data: appointment });
   } catch (err) {
+    console.error("Assign nurse error:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
