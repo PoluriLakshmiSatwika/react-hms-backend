@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
-import Nurse from "../models/nurseModel.js";
+import Nurse from "../models/Nurse.js";
+
 
 export const protectNurse = async (req, res, next) => {
   let token;

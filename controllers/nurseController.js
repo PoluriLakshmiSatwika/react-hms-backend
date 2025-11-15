@@ -1,5 +1,6 @@
 import Nurse from "../models/Nurse.js";
 
+
 export const getNurseProfile = async (req, res) => {
   try {
     const nurse = await Nurse.findById(req.nurse.id).select("-password");
