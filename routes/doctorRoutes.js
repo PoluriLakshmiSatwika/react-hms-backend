@@ -159,8 +159,6 @@ router.get("/nurses", async (req, res) => {
   }
 });
 
-
-
 // PUT /api/assignments
 router.put("/assignments", async (req, res) => {
   try {
