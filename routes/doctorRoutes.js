@@ -166,12 +166,16 @@ router.put("/assignments", async (req, res) => {
   try {
     const { appointmentId, nurseIds } = req.body;
 
+    // Validate input
     if (!appointmentId || !Array.isArray(nurseIds) || nurseIds.length === 0) {
       return res.status(400).json({ success: false, message: "Invalid data" });
     }
 
-    // Fetch nurses:
+    // Fetch nurses
     const nurses = await Nurse.find({ _id: { $in: nurseIds } });
+    if (!nurses || nurses.length === 0) {
+      return res.status(404).json({ success: false, message: "No nurses found" });
+    }
 
     const nurseData = nurses.map(n => ({
       nurseId: n._id,
@@ -179,32 +183,43 @@ router.put("/assignments", async (req, res) => {
       status: "Pending"
     }));
 
-    // Fetch appointment:
+    // Fetch appointment with patient
     const appointment = await Appointment.findById(appointmentId).populate("patientId");
     if (!appointment) {
       return res.status(404).json({ success: false, message: "Appointment not found" });
     }
 
-    // Update Appointment model:
+    if (!appointment.patientId) {
+      return res.status(400).json({ success: false, message: "Appointment has no patient assigned" });
+    }
+
+    // Update appointment assigned nurses
     appointment.assignedNurses = nurseData;
     await appointment.save();
 
-    // Create Assignment document (THIS FIXES YOUR ERROR):
-    const newAssignment = await Assignment.create({
-      appointmentId: appointment._id,
-      patientId: appointment.patientId._id,
-      date: appointment.appointmentDate,
-      time: appointment.slotTime,
-      assignedNurses: nurseData
-    });
+    // Check if assignment already exists to prevent duplicates
+    let assignment = await Assignment.findOne({ appointmentId });
+    if (assignment) {
+      assignment.assignedNurses = nurseData;
+      await assignment.save();
+    } else {
+      assignment = await Assignment.create({
+        appointmentId: appointment._id,
+        patientId: appointment.patientId._id, // REQUIRED
+        date: appointment.appointmentDate,
+        time: appointment.slotTime,
+        assignedNurses: nurseData
+      });
+    }
 
-    res.json({ success: true, data: newAssignment });
+    res.json({ success: true, data: assignment });
 
   } catch (err) {
     console.error("Assign nurse error:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
+
 
 
 export default router;

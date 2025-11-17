@@ -131,8 +131,7 @@ router.get("/assignments", protectNurse, async (req, res) => {
 });
 
 
-// ================== Accept Assignment ==================
-// Accept Assignment
+// PUT /api/assignments/:id/accept
 router.put("/assignments/:id/accept", protectNurse, async (req, res) => {
   try {
     const { id } = req.params;
@@ -142,8 +141,9 @@ router.put("/assignments/:id/accept", protectNurse, async (req, res) => {
     if (!assignment)
       return res.status(404).json({ success: false, message: "Assignment not found" });
 
+    // Find the nurse entry inside assignedNurses
     const nurseEntry = assignment.assignedNurses.find(
-      (n) => n.nurseId === nurse._id.toString()
+      (n) => n.nurseId.toString() === nurse._id.toString()
     );
 
     if (!nurseEntry)
@@ -152,6 +152,7 @@ router.put("/assignments/:id/accept", protectNurse, async (req, res) => {
     if (nurseEntry.status !== "Pending")
       return res.status(400).json({ success: false, message: "Already accepted or completed" });
 
+    // Update only this nurse's status
     nurseEntry.status = "Accepted";
     await assignment.save();
 
@@ -164,26 +165,29 @@ router.put("/assignments/:id/accept", protectNurse, async (req, res) => {
 
 
 
-// ================== Complete Assignment ==================
+// PUT /api/assignments/:id/complete
 router.put("/assignments/:id/complete", protectNurse, async (req, res) => {
   try {
-    const assignmentId = req.params.id;
+    const { id } = req.params;
     const nurse = req.nurse;
 
-    const assignment = await Assignment.findById(assignmentId);
+    const assignment = await Assignment.findById(id);
     if (!assignment)
       return res.status(404).json({ success: false, message: "Assignment not found" });
 
-    const isAssigned = assignment.assignedNurses.some(
+    // Find this nurse in assignedNurses
+    const nurseEntry = assignment.assignedNurses.find(
       (n) => n.nurseId.toString() === nurse._id.toString()
     );
-    if (!isAssigned)
+
+    if (!nurseEntry)
       return res.status(403).json({ success: false, message: "You are not assigned to this appointment" });
 
-    if (assignment.status !== "Accepted")
+    if (nurseEntry.status !== "Accepted")
       return res.status(400).json({ success: false, message: "You must accept the assignment before completing it" });
 
-    assignment.status = "Completed";
+    // Mark this nurse as completed
+    nurseEntry.status = "Completed";
     await assignment.save();
 
     res.json({ success: true, data: assignment });
