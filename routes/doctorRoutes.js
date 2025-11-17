@@ -160,30 +160,51 @@ router.get("/nurses", async (req, res) => {
 });
 
 
+
 // PUT /api/assignments
 router.put("/assignments", async (req, res) => {
   try {
     const { appointmentId, nurseIds } = req.body;
-    if (!appointmentId || !Array.isArray(nurseIds))
+
+    if (!appointmentId || !Array.isArray(nurseIds) || nurseIds.length === 0) {
       return res.status(400).json({ success: false, message: "Invalid data" });
+    }
 
-    // ✅ Fetch nurses
+    // Fetch nurses:
     const nurses = await Nurse.find({ _id: { $in: nurseIds } });
-    const nurseData = nurses.map((n) => ({ nurseId: n._id, nurseName: n.fullName }));
 
-    // ✅ Fetch appointment
-    const appointment = await Appointment.findById(appointmentId);
-    if (!appointment) return res.status(404).json({ success: false, message: "Appointment not found" });
+    const nurseData = nurses.map(n => ({
+      nurseId: n._id,
+      nurseName: n.fullName,
+      status: "Pending"
+    }));
 
-    // ✅ Assign nurses
+    // Fetch appointment:
+    const appointment = await Appointment.findById(appointmentId).populate("patientId");
+    if (!appointment) {
+      return res.status(404).json({ success: false, message: "Appointment not found" });
+    }
+
+    // Update Appointment model:
     appointment.assignedNurses = nurseData;
     await appointment.save();
 
-    res.json({ success: true, data: appointment });
+    // Create Assignment document (THIS FIXES YOUR ERROR):
+    const newAssignment = await Assignment.create({
+      appointmentId: appointment._id,
+      patientId: appointment.patientId._id,
+      date: appointment.appointmentDate,
+      time: appointment.slotTime,
+      assignedNurses: nurseData
+    });
+
+    res.json({ success: true, data: newAssignment });
+
   } catch (err) {
     console.error("Assign nurse error:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
+
 
 export default router;
