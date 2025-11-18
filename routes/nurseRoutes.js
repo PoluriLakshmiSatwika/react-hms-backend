@@ -101,99 +101,85 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// ================== Nurse Profile ==================
-router.get("/profile", protectNurse, getNurseProfile);
-
-// ================== Fetch Assignments ==================
-router.get("/assignments", protectNurse, async (req, res) => {
+// 📌 Get Appointments Assigned to This Nurse
+// =============================
+router.get("/appointments/:nurseId", async (req, res) => {
   try {
-    const nurseId = req.nurse._id.toString();
+    const { nurseId } = req.params;
 
-    // Find assignments where this nurse is assigned
-    const assignments = await Assignment.find({
-      "assignedNurses.nurseId": nurseId
+    const appointments = await Appointment.find({
+      assignedNurses: { $elemMatch: { nurseId } }
     })
       .populate("patientId", "fullName email phone")
-      .lean();
+      .populate("doctorId", "fullName");
 
-    // Add display-friendly fields
-    const formattedAssignments = assignments.map(a => ({
-      ...a,
-      displayPatientName: a.patientId?.fullName || "Unknown",
-      displayPatientPhone: a.patientId?.phone || "N/A"
-    }));
-
-    res.json({ success: true, data: formattedAssignments });
-  } catch (err) {
-    console.error("Assignments fetch error:", err);
+    res.json({ success: true, data: appointments });
+  } catch (error) {
+    console.error("Fetch Nurse Appointments Error:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
-// PUT /api/assignments/:id/accept
-router.put("/assignments/:id/accept", protectNurse, async (req, res) => {
+
+// =============================
+// 🟦 Accept Appointment
+// =============================
+router.put("/accept", async (req, res) => {
   try {
-    const { id } = req.params;
-    const nurse = req.nurse;
+    const { appointmentId, nurseId } = req.body;
 
-    const assignment = await Assignment.findById(id);
-    if (!assignment)
-      return res.status(404).json({ success: false, message: "Assignment not found" });
+    // Update appointment status → Accepted
+    const appointment = await Appointment.findById(appointmentId);
 
-    // Find the nurse entry inside assignedNurses
-    const nurseEntry = assignment.assignedNurses.find(
-      (n) => n.nurseId.toString() === nurse._id.toString()
+    if (!appointment)
+      return res.json({ success: false, message: "Appointment not found" });
+
+    appointment.status = "Confirmed"; // nurse accepted
+    await appointment.save();
+
+    // Update assignment also
+    await Assignment.updateOne(
+      { appointmentId },
+      { $set: { "assignedNurses.$[elem].status": "Accepted" } },
+      { arrayFilters: [{ "elem.nurseId": nurseId }] }
     );
 
-    if (!nurseEntry)
-      return res.status(403).json({ success: false, message: "You are not assigned to this appointment" });
-
-    if (nurseEntry.status !== "Pending")
-      return res.status(400).json({ success: false, message: "Already accepted or completed" });
-
-    // Update only this nurse's status
-    nurseEntry.status = "Accepted";
-    await assignment.save();
-
-    res.json({ success: true, data: assignment });
-  } catch (err) {
-    console.error("Accept assignment error:", err);
+    res.json({ success: true, message: "Appointment accepted" });
+  } catch (error) {
+    console.error("Accept Error:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
 
-// PUT /api/assignments/:id/complete
-router.put("/assignments/:id/complete", protectNurse, async (req, res) => {
+// =============================
+// 🟩 Mark Appointment Completed
+// =============================
+router.put("/complete", async (req, res) => {
   try {
-    const { id } = req.params;
-    const nurse = req.nurse;
+    const { appointmentId, nurseId } = req.body;
 
-    const assignment = await Assignment.findById(id);
-    if (!assignment)
-      return res.status(404).json({ success: false, message: "Assignment not found" });
+    const appointment = await Appointment.findById(appointmentId);
+    if (!appointment)
+      return res.json({ success: false, message: "Appointment not found" });
 
-    // Find this nurse in assignedNurses
-    const nurseEntry = assignment.assignedNurses.find(
-      (n) => n.nurseId.toString() === nurse._id.toString()
+    appointment.status = "Completed";
+    await appointment.save();
+
+    // update assignment table also
+    await Assignment.updateOne(
+      { appointmentId },
+      { $set: { "assignedNurses.$[elem].status": "Completed" } },
+      { arrayFilters: [{ "elem.nurseId": nurseId }] }
     );
 
-    if (!nurseEntry)
-      return res.status(403).json({ success: false, message: "You are not assigned to this appointment" });
-
-    if (nurseEntry.status !== "Accepted")
-      return res.status(400).json({ success: false, message: "You must accept the assignment before completing it" });
-
-    // Mark this nurse as completed
-    nurseEntry.status = "Completed";
-    await assignment.save();
-
-    res.json({ success: true, data: assignment });
-  } catch (err) {
-    console.error("Complete assignment error:", err);
+    res.json({ success: true, message: "Appointment marked completed" });
+  } catch (error) {
+    console.error("Completion Error:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
+
 
 export default router;
 
