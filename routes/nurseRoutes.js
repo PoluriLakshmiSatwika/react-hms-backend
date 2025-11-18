@@ -130,38 +130,6 @@ router.get("/assignments", protectNurse, async (req, res) => {
   }
 });
 
-
-// ✅ Get nurse assignments with patient info
-router.get("/assignments/:nurseId", async (req, res) => {
-  try {
-    const assignments = await Assignment.find({ nurseId: req.params.nurseId })
-      .populate("patientId", "fullName email phone") // patient basic info
-      .populate("doctorId", "fullName specialty");  // optional doctor info
-    res.json({ success: true, assignments });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
-});
-
-// ✅ Accept assignment
-router.post("/assignments/:assignmentId/accept", async (req, res) => {
-  try {
-    const assignment = await Assignment.findById(req.params.assignmentId);
-    if (!assignment) return res.status(404).json({ success: false, message: "Assignment not found" });
-
-    assignment.status = "accepted";
-    await assignment.save();
-
-    res.json({ success: true, message: "Assignment accepted", assignment });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
-});
-
-
-
 // PUT /api/assignments/:id/accept
 router.put("/assignments/:id/accept", protectNurse, async (req, res) => {
   try {
@@ -193,7 +161,6 @@ router.put("/assignments/:id/accept", protectNurse, async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
-
 
 
 // PUT /api/assignments/:id/complete
@@ -228,5 +195,6 @@ router.put("/assignments/:id/complete", protectNurse, async (req, res) => {
   }
 });
 
-
 export default router;
+
+
