@@ -1,3 +1,4 @@
+// Appointment.js
 import mongoose from "mongoose";
 
 const appointmentSchema = new mongoose.Schema({
@@ -7,11 +8,12 @@ const appointmentSchema = new mongoose.Schema({
   appointmentDate: { type: Date, required: true },
   slotTime: { type: String, required: true },
 
+  // STORE ONLY NURSE IDs → POPULATE WILL WORK
   assignedNurses: [
     {
-      nurseId: { type: mongoose.Schema.Types.ObjectId, ref: "Nurse" },
-      nurseName: String,
-    },
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Nurse",
+    }
   ],
 
   status: {
