@@ -106,7 +106,6 @@ router.post("/login", async (req, res) => {
 
 
 
-// 📌 Get appointments assigned to a nurse
 router.get("/appointments/:nurseId", protectNurse, async (req, res) => {
   try {
     const { nurseId } = req.params;
@@ -115,26 +114,23 @@ router.get("/appointments/:nurseId", protectNurse, async (req, res) => {
       "assignedNurses.nurseId": nurseId
     })
       .populate({
-  path: "appointmentId",
-  populate: [
-    { path: "doctorId", select: "fullName specialization" },
-    { path: "patientId", select: "fullName phone age gender" }
-  ]
-})
+        path: "appointmentId",
+        populate: [
+          { path: "patientId", select: "fullName email phone age gender" },
+          { path: "doctorId", select: "fullName specialization" }
+        ]
+      });
 
-      .exec();
-
-    return res.json({
+    res.json({
       success: true,
-      count: assignments.length,
-      data: assignments
+      data: assignments,
+      count: assignments.length
     });
-
-  } catch (error) {
-    console.error("Fetch Nurse Appointments Error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+  } catch (err) {
+    res.json({ success: false, message: "Server error" });
   }
 });
+
 
 
 
