@@ -8,6 +8,7 @@ import Appointment from "../models/Appointment.js";
 import { protectNurse } from "../middleware/authMiddleware.js"; // middleware to verify JWT
 import Assignment from "../models/Assignment.js"; // adjust path as needed
 import { getAssignedAppointments } from "../controllers/nurseController.js";
+import mongoose from "mongoose";
 
 
 const router = express.Router();
@@ -100,31 +101,36 @@ router.post("/login", async (req, res) => {
     console.error("Login error:", err);
     res.status(500).json({ success: false, message: "Server error during login" });
   }
-});
+ });
+// router.get("/appointments/:nurseId", protect, getAssignedAppointments);
 
-// 📌 Get Appointments Assigned to This Nurse
+
+
 router.get("/appointments/:nurseId", protectNurse, async (req, res) => {
   try {
     const { nurseId } = req.params;
 
-    const nurseObjectId = new mongoose.Types.ObjectId(nurseId);
-
-    const appointments = await Appointment.find({
-      assignedNurses: { $elemMatch: { nurseId: nurseObjectId } }
+    const assignments = await Assignment.find({
+      "assignedNurses.nurseId": nurseId
     })
-      .populate("patientId", "fullName email phone age gender")
-      .populate("doctorId", "fullName specialization");
+      .populate({
+        path: "appointmentId",
+        populate: [
+          { path: "patientId", select: "fullName email phone age gender" },
+          { path: "doctorId", select: "fullName specialization" }
+        ]
+      });
 
     res.json({
       success: true,
-      count: appointments.length,
-      data: appointments
+      data: assignments,
+      count: assignments.length
     });
-  } catch (error) {
-    console.error("Fetch Nurse Appointments Error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+  } catch (err) {
+    res.json({ success: false, message: "Server error" });
   }
 });
+
 
 
 

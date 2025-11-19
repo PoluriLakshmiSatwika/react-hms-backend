@@ -2,19 +2,23 @@ import mongoose from "mongoose";
 
 const AssignmentSchema = new mongoose.Schema({
   appointmentId: {
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Appointment",
     required: true,
   },
+
   patientId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Patient",
     required: true,
   },
+
   date: String,
   time: String,
+
   assignedNurses: [
     {
-      nurseId: String,
+      nurseId: { type: mongoose.Schema.Types.ObjectId, ref: "Nurse" },
       nurseName: String,
       status: {
         type: String,
@@ -23,12 +27,8 @@ const AssignmentSchema = new mongoose.Schema({
       },
     },
   ],
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
+
+  createdAt: { type: Date, default: Date.now },
 });
 
 export default mongoose.model("Assignment", AssignmentSchema);
-
-

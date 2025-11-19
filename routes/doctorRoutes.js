@@ -159,6 +159,47 @@ router.get("/nurses", async (req, res) => {
   }
 });
 
+// router.put("/assignments", async (req, res) => {
+//   try {
+//     const { appointmentId, nurseIds } = req.body;
+
+//     if (!appointmentId || !Array.isArray(nurseIds) || nurseIds.length === 0) {
+//       return res.status(400).json({ success: false, message: "Invalid data" });
+//     }
+
+//     const appointment = await Appointment.findById(appointmentId).populate("patientId");
+//     if (!appointment) {
+//       return res.status(404).json({ success: false, message: "Appointment not found" });
+//     }
+
+//     // SAVE ONLY NURSE IDs
+//     appointment.assignedNurses = nurseIds;
+//     await appointment.save();
+
+//     // CREATE OR UPDATE ASSIGNMENT
+//     let assignment = await Assignment.findOne({ appointmentId });
+
+//     if (assignment) {
+//       assignment.assignedNurses = nurseIds;
+//       await assignment.save();
+//     } else {
+//       assignment = await Assignment.create({
+//         appointmentId,
+//         patientId: appointment.patientId._id,
+//         date: appointment.appointmentDate,
+//         time: appointment.slotTime,
+//         assignedNurses: nurseIds
+//       });
+//     }
+
+//     res.json({ success: true, data: assignment });
+//   } catch (err) {
+//     console.error("Assign nurse error:", err);
+//     res.status(500).json({ success: false, message: err.message });
+//   }
+// });
+
+
 // PUT /api/assignments
 router.put("/assignments", async (req, res) => {
   try {
