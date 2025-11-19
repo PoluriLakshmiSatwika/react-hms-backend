@@ -14,6 +14,7 @@ import doctorRoutes from "./routes/doctorRoutes.js";
 import passwordRoutes from "./routes/passwordRoutes.js";
 import appointmentRoutes from "./routes/appointmentRoutes.js";
 import assignmentRoutes from "./routes/assignmentRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
 // ✅ Load environment variables ONCE
 dotenv.config({ path: "./.env" });
 
@@ -71,6 +72,7 @@ app.use("/uploads", express.static("uploads"));
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/password", passwordRoutes);
 app.use("/api/assignments", assignmentRoutes);
+app.use("/api/payments", paymentRoutes);
 // ✅ Test Route
 app.get("/", (req, res) => {
   res.send("Backend is running!");
