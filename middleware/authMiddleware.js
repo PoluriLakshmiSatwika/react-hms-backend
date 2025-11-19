@@ -3,22 +3,21 @@ import Nurse from "../models/Nurse.js";
 
 
 export const protectNurse = async (req, res, next) => {
-  let token;
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith("Bearer")
-  ) {
-    token = req.headers.authorization.split(" ")[1];
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.nurse = await Nurse.findById(decoded.id).select("-password");
-      next();
-    } catch (err) {
-      return res.status(401).json({ success: false, message: "Not authorized" });
-    }
-  }
-  if (!token) {
-    return res.status(401).json({ success: false, message: "Token missing" });
+  let token = req.headers.authorization?.split(" ")[1];
+
+  if (!token)
+    return res.status(401).json({ success: false, message: "No token provided" });
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.nurse = await Nurse.findById(decoded.id).select("-password");
+
+    if (!req.nurse)
+      return res.status(404).json({ success: false, message: "Nurse not found" });
+
+    next();
+  } catch (err) {
+    res.status(401).json({ success: false, message: "Invalid token" });
   }
 };
 export const verifyToken = (req, res, next) => {

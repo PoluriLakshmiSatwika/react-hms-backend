@@ -4,6 +4,8 @@ import Patient from "../models/Patient.js";
 import Doctor from "../models/Doctor.js";
 
 const router = express.Router();
+import { updateAppointmentStatus } from "../controllers/appointmentController.js";
+import { protectNurse } from "../middleware/authMiddleware.js";
 
 /* ✅ FETCH DOCTORS BY SPECIALTY */
 router.get("/doctors/:specialty", async (req, res) => {
@@ -180,5 +182,7 @@ router.put("/cancel/:appointmentId", async (req, res) => {
     res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
 });
+// Accept / Complete appointment
+router.put("/update-status", protectNurse, updateAppointmentStatus);
 
 export default router;

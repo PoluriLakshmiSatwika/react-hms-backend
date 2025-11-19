@@ -8,6 +8,8 @@ import Appointment from "../models/Appointment.js";
 import { getNurseProfile } from "../controllers/nurseController.js";
 import { protectNurse } from "../middleware/authMiddleware.js"; // middleware to verify JWT
 import Assignment from "../models/Assignment.js"; // adjust path as needed
+import { getAssignedAppointments } from "../controllers/nurseController.js";
+
 
 const router = express.Router();
 
@@ -120,6 +122,7 @@ router.get("/appointments/:nurseId", async (req, res) => {
   }
 });
 
+router.get("/appointments/:nurseId", protectNurse, getAssignedAppointments);
 
 // =============================
 // 🟦 Accept Appointment

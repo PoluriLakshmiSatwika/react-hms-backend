@@ -1,14 +1,25 @@
-import Nurse from "../models/Nurse.js";
+// controllers/nurseController.js
 
+import Appointment from "../models/Appointment.js";
 
-export const getNurseProfile = async (req, res) => {
+export const getAssignedAppointments = async (req, res) => {
   try {
-    const nurse = await Nurse.findById(req.nurse.id).select("-password");
-    if (!nurse) {
-      return res.status(404).json({ success: false, message: "Nurse not found" });
-    }
-    res.status(200).json({ success: true, nurse });
-  } catch (err) {
-    res.status(500).json({ success: false, message: "Server Error" });
+    const { nurseId } = req.params;
+
+    const appointments = await Appointment.find({
+      "assignedNurses.nurseId": nurseId
+    })
+      .populate("patientId", "fullName age gender")
+      .populate("doctorId", "fullName specialization")
+      .populate("assignedNurses.nurseId", "fullName");
+
+    res.json({
+      success: true,
+      data: appointments,
+    });
+
+  } catch (error) {
+    console.error("Error fetching nurse appointments:", error);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
