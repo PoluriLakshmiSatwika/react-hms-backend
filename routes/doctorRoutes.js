@@ -258,7 +258,4 @@ router.put("/assignments", async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 });
-
-
-
 export default router;
