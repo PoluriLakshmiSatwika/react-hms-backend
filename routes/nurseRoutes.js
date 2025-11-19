@@ -102,31 +102,33 @@ router.post("/login", async (req, res) => {
     res.status(500).json({ success: false, message: "Server error during login" });
   }
 });
+router.get("/appointments/:nurseId", protectNurse, getAssignedAppointments);
 
-// 📌 Get appointments assigned to a nurse
-router.get("/appointments/:nurseId", protectNurse, async (req, res) => {
-  try {
-    const { nurseId } = req.params;
 
-    const nurseObjectId = new mongoose.Types.ObjectId(nurseId);
+// // 📌 Get appointments assigned to a nurse
+// router.get("/appointments/:nurseId", protectNurse, async (req, res) => {
+//   try {
+//     const { nurseId } = req.params;
 
-    const appointments = await Appointment.find({
-      assignedNurses: { $elemMatch: { nurseId: nurseObjectId } }
-    })
-      .populate("patientId", "fullName email phone age gender")
-      .populate("doctorId", "fullName specialization");
+//     const nurseObjectId = new mongoose.Types.ObjectId(nurseId);
 
-    return res.json({
-      success: true,
-      count: appointments.length,
-      data: appointments
-    });
+//     const appointments = await Appointment.find({
+//       assignedNurses: { $elemMatch: { nurseId: nurseObjectId } }
+//     })
+//       .populate("patientId", "fullName email phone age gender")
+//       .populate("doctorId", "fullName specialization");
 
-  } catch (error) {
-    console.error("Fetch Nurse Appointments Error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
-});
+//     return res.json({
+//       success: true,
+//       count: appointments.length,
+//       data: appointments
+//     });
+
+//   } catch (error) {
+//     console.error("Fetch Nurse Appointments Error:", error);
+//     res.status(500).json({ success: false, message: "Server error" });
+//   }
+// });
 
 
 // =============================
