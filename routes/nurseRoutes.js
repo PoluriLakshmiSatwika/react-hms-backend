@@ -107,22 +107,27 @@ router.post("/login", async (req, res) => {
 
 
 // 📌 Get appointments assigned to a nurse
-router.get("/appointments/:nurseId", protectNurse,getAssignedAppointments, async (req, res) => {
+router.get("/appointments/:nurseId", protectNurse, async (req, res) => {
   try {
     const { nurseId } = req.params;
 
-    const nurseObjectId = new mongoose.Types.ObjectId(nurseId);
-
-    const appointments = await Appointment.find({
-      assignedNurses: { $elemMatch: { nurseId: nurseObjectId } }
+    const assignments = await Assignment.find({
+      "assignedNurses.nurseId": nurseId
     })
-      .populate("patientId", "fullName email phone age gender")
-      .populate("doctorId", "fullName specialization");
+      .populate({
+  path: "appointmentId",
+  populate: [
+    { path: "doctorId", select: "fullName specialization" },
+    { path: "patientId", select: "fullName phone age gender" }
+  ]
+})
+
+      .exec();
 
     return res.json({
       success: true,
-      count: appointments.length,
-      data: appointments
+      count: assignments.length,
+      data: assignments
     });
 
   } catch (error) {
@@ -130,6 +135,7 @@ router.get("/appointments/:nurseId", protectNurse,getAssignedAppointments, async
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
+
 
 
 // =============================
