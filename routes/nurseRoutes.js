@@ -8,6 +8,7 @@ import Appointment from "../models/Appointment.js";
 import { protectNurse } from "../middleware/authMiddleware.js"; // middleware to verify JWT
 import Assignment from "../models/Assignment.js"; // adjust path as needed
 import { getAssignedAppointments } from "../controllers/nurseController.js";
+import mongoose from "mongoose";
 
 
 const router = express.Router();
@@ -102,7 +103,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// 📌 Get Appointments Assigned to This Nurse
+// 📌 Get appointments assigned to a nurse
 router.get("/appointments/:nurseId", protectNurse, async (req, res) => {
   try {
     const { nurseId } = req.params;
@@ -115,17 +116,17 @@ router.get("/appointments/:nurseId", protectNurse, async (req, res) => {
       .populate("patientId", "fullName email phone age gender")
       .populate("doctorId", "fullName specialization");
 
-    res.json({
+    return res.json({
       success: true,
       count: appointments.length,
       data: appointments
     });
+
   } catch (error) {
     console.error("Fetch Nurse Appointments Error:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
-
 
 
 // =============================
