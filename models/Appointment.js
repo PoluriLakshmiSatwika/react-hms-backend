@@ -7,10 +7,12 @@ const appointmentSchema = new mongoose.Schema({
   appointmentDate: { type: Date, required: true },
   slotTime: { type: String, required: true },
   feePaid: { type: Boolean, default: false },
-  paymentId: { type: mongoose.Schema.Types.ObjectId, ref: "Payment" },
+
+  // ✅ FIX: Razorpay paymentId must be STRING, not ObjectId
+  paymentId: { type: String },
+
   validityCount: { type: Number, default: 3 },
 
-  // ✅ FIXED assignedNurses schema
   assignedNurses: [
     {
       nurseId: { type: mongoose.Schema.Types.ObjectId, ref: "Nurse", required: true },

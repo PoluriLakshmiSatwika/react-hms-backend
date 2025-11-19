@@ -185,4 +185,68 @@ router.put("/cancel/:appointmentId", async (req, res) => {
 // Accept / Complete appointment
 router.put("/update-status", protectNurse, updateAppointmentStatus);
 
+/* ✅ FINALIZE APPOINTMENT AFTER SUCCESSFUL PAYMENT */
+router.post("/finalize", async (req, res) => {
+  try {
+    const {
+      patientId,
+      doctorId,
+      disease,
+      appointmentDate,
+      slotTime,
+      paymentId
+    } = req.body;
+
+    if (!patientId || !doctorId || !disease || !appointmentDate || !slotTime || !paymentId) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required"
+      });
+    }
+
+    // Prevent duplicate slot booking
+    const existing = await Appointment.findOne({
+      doctorId,
+      appointmentDate,
+      slotTime,
+      status: { $ne: "Cancelled" }
+    });
+
+    if (existing) {
+      return res.status(409).json({
+        success: false,
+        message: "This slot is already booked. Choose another slot.",
+      });
+    }
+
+    const newAppointment = await Appointment.create({
+      patientId,
+      doctorId,
+      disease,
+      appointmentDate,
+      slotTime,
+      paymentId,
+      feePaid: true,
+      status: "Confirmed",
+      validityCount: 3,
+      assignedNurses: []
+    });
+
+    return res.json({
+      success: true,
+      message: "Appointment confirmed successfully",
+      appointment: newAppointment
+    });
+
+  } catch (error) {
+    console.error("❌ Finalize Appointment Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error finalizing appointment",
+      error: error.message
+    });
+  }
+});
+
+
 export default router;
