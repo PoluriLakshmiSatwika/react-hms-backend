@@ -103,25 +103,30 @@ router.post("/login", async (req, res) => {
 });
 
 // 📌 Get Appointments Assigned to This Nurse
-// =============================
-router.get("/appointments/:nurseId", async (req, res) => {
+router.get("/appointments/:nurseId", protectNurse, async (req, res) => {
   try {
     const { nurseId } = req.params;
 
-    const appointments = await Appointment.find({
-      assignedNurses: { $elemMatch: { nurseId } }
-    })
-      .populate("patientId", "fullName email phone")
-      .populate("doctorId", "fullName");
+    const nurseObjectId = new mongoose.Types.ObjectId(nurseId);
 
-    res.json({ success: true, data: appointments });
+    const appointments = await Appointment.find({
+      assignedNurses: { $elemMatch: { nurseId: nurseObjectId } }
+    })
+      .populate("patientId", "fullName email phone age gender")
+      .populate("doctorId", "fullName specialization");
+
+    res.json({
+      success: true,
+      count: appointments.length,
+      data: appointments
+    });
   } catch (error) {
     console.error("Fetch Nurse Appointments Error:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
-router.get("/appointments/:nurseId", protectNurse, getAssignedAppointments);
+
 
 // =============================
 // 🟦 Accept Appointment
